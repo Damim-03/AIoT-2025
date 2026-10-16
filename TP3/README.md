@@ -1,18 +1,38 @@
-# TP3 – Solution: Logistic Regression on the Arduino Uno
+# TP3 – Solution: the TP2 models on a microcontroller (ESP32 + DHT22)
 
 Statement: [TP3_Logistic_Arduino.md](TP3_Logistic_Arduino.md) · Setup: [install.md](install.md)
+
+## Board: ESP32 instead of the Arduino Uno
+The statement uses an Arduino Uno. This solution runs **both** TP2 models, and the XGBoost one does not fit in the Uno:
+
+| | Arduino Uno | ESP32 |
+|---|---|---|
+| Flash / RAM | 32 KB / 2 KB | 4 MB / 520 KB |
+| Logistic Regression (37 numbers, 148 bytes) | fits | fits |
+| XGBoost (300 trees, 4,922 nodes, 59,668 bytes) | does not fit | fits |
+
+So the provided Wokwi project is kept, with the board changed: `platformio.ini` targets `esp32dev`, `diagram.json` wires the DHT22 to an ESP32 DevKit (data on GPIO 15) and `wokwi.toml` points to the ESP32 firmware.
+Firmware: 332,609 bytes of Flash (25.4%) and 21,532 bytes of RAM (6.6%).
 
 ## Files
 | File | Role |
 |---|---|
-| `models/LR-Pipeline.pkl` | The LR-Pipeline trained in TP2 (StandardScaler + LogisticRegression on the 12 sensor features) |
-| `tools/export_lr_params.py` | **Step 1** – loads that model, prints μ, σ, W and b, and checks the C formula against scikit-learn on the TP1/TP2 test set |
-| `src/main.cpp` | **Steps 2–4** – the parameters as constants, `standardize()`, `sigmoid()`, `predict()`, and the real-time loop on the DHT22 |
-| `diagram.json`, `wokwi.toml`, `platformio.ini` | Wokwi circuit (Uno + DHT22 on pin 2) and build settings, as provided |
-| `smoke_detection_iot.csv` | Dataset of TP1, used by the export script for the check |
+| `models/LR-Pipeline.pkl`, `models/XGB-Pipeline.pkl` | The two pipelines trained in TP2, unchanged (StandardScaler + model, 12 sensor features) |
+| `tools/export_models.py` | **Step 1** – prints μ, σ, W and b of the LR, writes the XGBoost trees to `src/xgb_model.h`, and checks both C computations against Python on the 62,630 dataset rows |
+| `src/main.cpp` | **Steps 2–4** – the LR parameters as constants, `standardize()`, `sigmoid()`, `predict()`, the XGBoost call, and the real-time loop on the DHT22 |
+| `src/xgb_model.h` | XGBoost exported to C: every node of the 300 trees, the scaler folded into the split thresholds |
+| `diagram.json`, `wokwi.toml`, `platformio.ini` | Wokwi circuit and build settings (ESP32 + DHT22) |
+| `smoke_detection_iot.csv` | Dataset of TP1, used by the export script for the checks |
 
-## Model (TP2 LR-Pipeline, test set of 12,526 samples)
-Accuracy **0.8951** · F1 **0.9281**. The C formula gives the same decision as scikit-learn on all 12,526 test samples.
+## Models (TP2 pipelines, test set of 12,526 samples)
+| Model | Accuracy | Recall | F1 | On the board |
+|---|---|---|---|---|
+| Logistic Regression | 0.8951 | 0.9482 | 0.9281 | 37 numbers in `main.cpp` |
+| XGBoost | 1.0000 | 1.0000 | 1.0000 | 4,922 nodes in `xgb_model.h` |
+
+C vs Python, on all 62,630 rows: XGBoost gives the same decision on every row. Logistic Regression differs on one row only, whose probability is 0.500003 in Python and 0.499995 in float32: a sample sitting on the threshold.
+
+LR parameters:
 
 | Feature | μ (mean) | σ (std) | W (weight) |
 |---|---|---|---|
@@ -31,19 +51,21 @@ Accuracy **0.8951** · F1 **0.9281**. The C formula gives the same decision as s
 
 Bias b = **−0.3844**.
 
-On the Uno only Temperature and Humidity come from the DHT22. The 10 other features keep the values of the `X` array of the provided `main.cpp` (first row of the dataset).
-With these values the model answers *normal* only for hot and dry air: about T ≥ 43 °C with H ≤ 18 %, for example 70 °C / 5 %.
+## What the DHT22 changes
+Only Temperature and Humidity come from the DHT22; the 10 other features keep the values of the `X` array of the provided `main.cpp` (first row of the dataset, a *normal* case).
+- **Logistic Regression** answers *fire* for most readings, and *normal* only for hot and dry air (about T ≥ 43 °C with H ≤ 18 %).
+- **XGBoost** answers *normal* for every reading of the DHT22 range (−40…80 °C, 0…100 %; highest P = 0.0019): its decision depends on the gas and particle sensors, which stay at the values of that normal row.
 
 ## Run
 1. Open the `TP3` folder in VS Code → PlatformIO **Build**.
 2. `F1` → **Wokwi: Start Simulator**, then click the DHT22 to move the temperature and humidity sliders.
 
-Expected serial output (same values as Python):
+Expected serial output (same probabilities as Python; the times are measured on the board):
 ```
-Temperature: 24.00 C | Humidity: 40.00 % | Predicted Probability: 0.9995 | Predicted Class: 1 (FIRE)
-Temperature: 42.60 C | Humidity: 38.00 % | Predicted Probability: 0.9973 | Predicted Class: 1 (FIRE)
-Temperature: 60.00 C | Humidity: 10.00 % | Predicted Probability: 0.5452 | Predicted Class: 1 (FIRE)
-Temperature: 70.00 C | Humidity: 5.00 % | Predicted Probability: 0.2026 | Predicted Class: 0 (normal)
-Temperature: 80.00 C | Humidity: 0.00 % | Predicted Probability: 0.0511 | Predicted Class: 0 (normal)
+Temperature: 24.00 C | Humidity: 40.00 %
+  LR : P(fire) = 0.9995 -> Class 1 (FIRE)    [.. us]
+  XGB: P(fire) = 0.0000 -> Class 0 (normal)  [.. us]
+Temperature: 70.00 C | Humidity: 5.00 %
+  LR : P(fire) = 0.2026 -> Class 0 (normal)  [.. us]
+  XGB: P(fire) = 0.0000 -> Class 0 (normal)  [.. us]
 ```
-Firmware size: 6,362 bytes of Flash (19.7%) and 411 bytes of RAM (20.1%).
