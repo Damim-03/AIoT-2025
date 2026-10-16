@@ -11,8 +11,6 @@ Statement: [TP3_Logistic_Arduino.md](TP3_Logistic_Arduino.md) · Setup: [install
 | `diagram.json`, `wokwi.toml`, `platformio.ini` | Wokwi circuit (Uno + DHT22 on pin 2) and build settings, as provided |
 | `smoke_detection_iot.csv` | Dataset of TP1, used by the export script for the check |
 
-**Bonus** (branch `tp3-esp32-bonus`, folder `TP3/esp32_fire_alarm`): the TP2 models (LR and a compressed XGBoost) running on an ESP32 in Wokwi.
-
 ## Model (TP2 LR-Pipeline, test set of 12,526 samples)
 Accuracy **0.8951** · F1 **0.9281**. The C formula gives the same decision as scikit-learn on all 12,526 test samples.
 
