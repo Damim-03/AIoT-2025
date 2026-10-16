@@ -9,7 +9,8 @@ Statement: [TP3_Logistic_Arduino.md](TP3_Logistic_Arduino.md) · Setup: [install
 | `src/main.cpp` | **Steps 2–4** – the parameters as constants, `standardize()`, `sigmoid()`, `predict()`, and the real-time loop on the DHT22 |
 | `diagram.json`, `wokwi.toml`, `platformio.ini` | Wokwi circuit (Uno + DHT22 on pin 2) and build settings, as provided |
 | `smoke_detection_iot.csv` | Dataset of TP1, used by the export script |
-| `esp32_fire_alarm/` | **Bonus** – the full 12-sensor models (LR and compressed XGBoost) on an ESP32, see its README |
+
+**Bonus** (branch `tp3-esp32-bonus`, folder `TP3/esp32_fire_alarm`): the full 12-sensor models of TP2 (LR and a compressed XGBoost) running on an ESP32 in Wokwi.
 
 ## Why 2 features
 The Uno only has the DHT22, which measures Temperature and Humidity, so the model is trained on these 2 features (`N_FEATURES = 2`, as in the statement).
