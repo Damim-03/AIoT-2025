@@ -4,8 +4,8 @@
     "editor": "wokwi",
     "parts": [
         {
-            "type": "board-esp32-devkit-c-v4",
-            "id": "esp",
+            "type": "wokwi-arduino-uno",
+            "id": "uno",
             "top": 0,
             "left": 0,
             "attrs": {}
@@ -13,41 +13,37 @@
         {
             "type": "wokwi-dht22",
             "id": "dht1",
-            "top": -144,
-            "left": 172.8,
+            "top": -201.3,
+            "left": 23.4,
             "attrs": {}
         }
     ],
     "connections": [
         [
-            "esp:TX",
-            "$serialMonitor:RX",
-            "",
-            []
-        ],
-        [
-            "esp:RX",
-            "$serialMonitor:TX",
-            "",
-            []
-        ],
-        [
             "dht1:VCC",
-            "esp:3V3",
+            "uno:5V",
             "red",
-            []
+            [
+                "v316.8",
+                "h124.8"
+            ]
         ],
         [
             "dht1:SDA",
-            "esp:15",
+            "uno:2",
             "green",
-            []
+            [
+                "v57.6",
+                "h192.1"
+            ]
         ],
         [
             "dht1:GND",
-            "esp:GND.2",
+            "uno:GND.1",
             "black",
-            []
+            [
+                "v0"
+            ]
         ]
     ],
     "dependencies": {}
