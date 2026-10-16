@@ -2,6 +2,3 @@
 include
 lib
 test
-
-# keep the headers of the ESP32 bonus project (the "include" rule above is for the Uno project)
-!/esp32_fire_alarm/include/
